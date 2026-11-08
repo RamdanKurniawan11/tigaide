@@ -387,8 +387,7 @@ motionKit.scene('setup', () => {
     cuapp: { src: 'assets/inventory.png', alt: 'Tigaide customs apps', label: 'Custom apps as you go', device: 'Create your own apps· Laptop & Mobile app' },
   };
 
-  // Two layers allow a true crossfade: the current visual stays visible while
-  // the next image loads, instead of clearing the preview and causing a flash.
+  // Two layers allow a true crossfade while the next image loads.
   const imageB = imageA.cloneNode(false);
   imageB.removeAttribute('id');
   imageB.classList.remove('is-active');
@@ -396,60 +395,71 @@ motionKit.scene('setup', () => {
   stage.insertBefore(imageB, imageA.nextSibling);
   let front = imageA;
   let back = imageB;
-  let activeId = 'hrm';
-  let raf = 0;
-  let lastSwitchAt = 0;
+  let activeId = imageA.dataset.productImage || 'hrm';
+  let requestId = 0;
 
   Object.values(products).forEach(product => { const preload = new Image(); preload.src = product.src; });
 
-  function activate(item, force = false) {
+  function activate(item) {
     const id = item?.dataset.product;
-    if (!id || !products[id] || (id === activeId && !force)) return;
+    if (!id || !products[id] || id === activeId) return;
     const product = products[id];
     activeId = id;
+    const thisRequest = ++requestId;
     items.forEach(entry => entry.classList.toggle('is-active', entry === item));
-    label.textContent = product.label;
-    device.textContent = product.device;
+    if (label) label.textContent = product.label;
+    if (device) device.textContent = product.device;
 
-    back.classList.remove('is-active');
-    back.alt = product.alt;
-    back.onload = () => {
-      // Begin fade only after the incoming asset is ready.
+    const incoming = back;
+    const outgoing = front;
+    incoming.classList.remove('is-active');
+    incoming.alt = product.alt;
+    incoming.onload = () => {
+      if (thisRequest !== requestId) return;
       requestAnimationFrame(() => {
-        back.classList.add('is-active');
-        front.classList.remove('is-active');
-        const oldFront = front;
-        front = back;
-        back = oldFront;
-        back.onload = null;
+        if (thisRequest !== requestId) return;
+        incoming.classList.add('is-active');
+        outgoing.classList.remove('is-active');
+        front = incoming;
+        back = outgoing;
+        incoming.onload = null;
       });
     };
-    back.onerror = () => { back.onload = null; };
-    back.src = product.src;
-    if (back.complete && back.naturalWidth) back.onload();
-    lastSwitchAt = performance.now();
+    incoming.onerror = () => { incoming.onload = null; };
+    incoming.src = product.src;
+    if (incoming.complete && incoming.naturalWidth) incoming.onload();
   }
 
-  // Choose the item whose center is nearest the viewport's visual center.
-  // rAF batches scroll events and avoids IntersectionObserver ratio flicker.
-  function updateActive() {
-    raf = 0;
-    const centerY = window.innerHeight * 0.5;
-    let bestItem = items[0];
-    let bestDistance = Infinity;
-    for (const item of items) {
-      const rect = item.getBoundingClientRect();
-      const distance = Math.abs((rect.top + rect.bottom) / 2 - centerY);
-      if (distance < bestDistance) { bestDistance = distance; bestItem = item; }
-    }
-    if (bestItem.dataset.product !== activeId) {
-      // A small stability window prevents rapid toggling at section boundaries.
-      if (performance.now() - lastSwitchAt > 180) activate(bestItem);
-    }
+  const initialItem = items.find(item => item.dataset.product === activeId) || items[0];
+  items.forEach(item => item.classList.toggle('is-active', item === initialItem));
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      const centered = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => Math.abs(a.boundingClientRect.top + a.boundingClientRect.height / 2 - innerHeight / 2)
+          - Math.abs(b.boundingClientRect.top + b.boundingClientRect.height / 2 - innerHeight / 2));
+      if (centered[0]) activate(centered[0].target);
+    }, { root: null, rootMargin: '-42% 0px -42% 0px', threshold: 0 });
+    items.forEach(item => observer.observe(item));
+  } else {
+    let raf = 0;
+    const updateActive = () => {
+      raf = 0;
+      const centerY = innerHeight * 0.5;
+      const visible = items.filter(item => {
+        const rect = item.getBoundingClientRect();
+        return rect.bottom > 0 && rect.top < innerHeight;
+      });
+      visible.sort((a, b) => {
+        const rectA = a.getBoundingClientRect(), rectB = b.getBoundingClientRect();
+        return Math.abs(rectA.top + rectA.height / 2 - centerY) - Math.abs(rectB.top + rectB.height / 2 - centerY);
+      });
+      if (visible[0]) activate(visible[0]);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(updateActive); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    updateActive();
   }
-  function onScroll() { if (!raf) raf = requestAnimationFrame(updateActive); }
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
-  activate(items.find(item => item.dataset.product === 'hrm') || items[0], true);
-  updateActive();
 })();

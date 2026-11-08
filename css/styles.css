@@ -942,6 +942,133 @@ input, textarea, select, button { max-width: 100%; }
   #start .start__window { min-height: clamp(30rem, 72svh, 34rem); }
 }
 
+/* On phones, keep the listen demo in normal document flow instead of pinning
+   a full-screen scene over its captions and following heading. */
+@media (max-width: 47.99rem) {
+  [data-8b-live] #listen .listen__hold {
+    height: auto;
+    animation: none;
+    view-timeline: none;
+  }
+  [data-8b-live] #listen .listen__stage {
+    position: relative;
+    top: auto;
+    display: block;
+    height: auto;
+    padding-block: 0 var(--space-2);
+  }
+  [data-8b-live] #listen .listen__panels {
+    display: block;
+    height: auto;
+    min-height: 0;
+  }
+  [data-8b-live] #listen .listen__panel--voice {
+    display: none;
+  }
+  [data-8b-live] #listen .listen__panel--read {
+    display: flex;
+    flex-direction: column;
+    min-height: 21rem;
+    border-radius: var(--radius-2);
+    padding: 1rem;
+  }
+  [data-8b-live] #listen .listen__panel--read .listen__label {
+    position: relative;
+    inset: auto;
+    margin: 0 0 0.75rem;
+  }
+  [data-8b-live] #listen .listen__track--read {
+    position: relative;
+    inset: auto;
+    display: grid;
+    flex: 1;
+    align-content: center;
+    gap: 0.625rem;
+    width: 100%;
+    height: auto;
+    padding: 0;
+  }
+  [data-8b-live] #listen .listen__track--read > .listen__row {
+    position: relative;
+    inset: auto;
+    max-width: 100%;
+    animation: none;
+    translate: none;
+    opacity: 1;
+  }
+  [data-8b-live] #listen .listen__track--read .m-caption {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  [data-8b-live] #listen .listen__panel--voice,
+  [data-8b-live] #listen .listen__panel--read {
+    animation: none;
+    translate: none;
+  }
+  [data-8b-live] #listen .listen__track--voice { display: none; }
+  [data-8b-live] #listen .listen__stage > .listen__title {
+    margin-top: 1.5rem !important;
+    font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
+    line-height: 1.08;
+  }
+}
+
+/* Show every product mockup beside its own description. */
+#calls .calls__grid { grid-template-columns: 1fr; gap: 0; }
+#calls .calls__list { display: grid; gap: 1.25rem; }
+#calls .calls__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  min-height: 0;
+  padding: clamp(1.25rem, 3vw, 2rem) 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-2) 18%, transparent);
+  opacity: 1;
+  animation: none;
+}
+#calls .calls__item:last-child { border-bottom: 1px solid color-mix(in srgb, var(--color-2) 18%, transparent); }
+#calls .calls__item.is-active { border-color: color-mix(in srgb, var(--color-2) 18%, transparent); }
+#calls .calls__item-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  border-radius: 1.25rem;
+  background: radial-gradient(ellipse at 50% 42%, #31516f 0%, #1f3954 62%, #192f47 100%);
+}
+#calls .calls__item-copy { display: grid; align-content: center; gap: 0.75rem; }
+#calls .calls__item-copy h3,
+#calls .calls__item-copy p { max-width: 38rem; }
+@media (max-width: 560px) {
+  #calls .calls__item { grid-template-columns: 1fr; gap: 1rem; }
+  #calls .calls__item-image { aspect-ratio: 4 / 3; border-radius: 1rem; }
+}
+
+.whatsapp-float {
+  position: fixed;
+  z-index: 100;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 0.35rem 1.25rem #0004;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.whatsapp-float svg { width: 2rem; height: 2rem; fill: currentColor; }
+.whatsapp-float:focus-visible { outline: 3px solid var(--color-1); outline-offset: 3px; }
+@media (hover: hover) {
+  .whatsapp-float:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1.5rem #0005; }
+}
+
 /* Avoid layout movement from oversized media or long content */
 @media (max-width: 768px) {
   .calls__list, .calls__item, .contact__info, .contact__form,
